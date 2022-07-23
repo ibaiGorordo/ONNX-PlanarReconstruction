@@ -142,7 +142,7 @@ if __name__ == '__main__':
     img = imread_from_url("https://upload.wikimedia.org/wikipedia/commons/0/0d/Bedroom_Mitcham.jpg")
 
     # Perform the inference in the image
-    segmentation, cluster_normals = planeDetection(img)
+    segmentation, cluster_normals = planeSeg(img)
 
     # Draw model output
     output_img = planeSeg.draw(img, alpha=0.2)

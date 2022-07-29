@@ -6,13 +6,12 @@
 
 # Important
 - The post processing is not completelly the same as the original implementation. 
-- The Mean Shift algorithm is done with Scikit Learn which takes a lot of time.
+- The Mean Shift was replaced with a custom method using Kmeans. It is faster (x10) than using MeanShift from scikit-learn, but it requires some fine tuning and is still slower than the model itself.
 
 # Requirements
 
  * Check the **requirements.txt** file. 
  * For ONNX, if you have a NVIDIA GPU, then install the **onnxruntime-gpu**, otherwise use the **onnxruntime** library.
- * Additionally, **pafy** and **youtube-dl** are required for youtube video inference.
  
 # Installation
 ```
@@ -26,12 +25,6 @@ For Nvidia GPU computers:
 
 Otherwise:
 `pip install onnxruntime`
-
-### For youtube video inference
-```
-pip install youtube_dl
-pip install git+https://github.com/zizo-pro/pafy@b8976f22c19e4ab5515cacbfae0a3970370c102b
-```
 
 # ONNX model 
 The original model was converted to ONNX using the following Colab notebook:

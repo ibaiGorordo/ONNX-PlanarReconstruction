@@ -3,16 +3,17 @@ import cv2
 import numpy as np
 import onnxruntime
 
-from sklearn.cluster import MeanShift
+from .utils import PlaneCluster
 
 rng = np.random.default_rng(0)
 colors = rng.uniform(0, 255, size=(50, 3))
-colors = np.hstack([colors, np.ones((50, 1))*255])
-colors[0, :] = [0, 0, 0, 0]
 
 class PlanarReconstruction:
 
-    def __init__(self, path):
+    def __init__(self, path, init_cluster_num=10, max_cluster_distance=70):
+
+        self.planeCluster = PlaneCluster(init_cluster_num, max_cluster_distance)
+
         # Initialize model
         self.initialize_model(path)
 
@@ -27,16 +28,15 @@ class PlanarReconstruction:
         self.get_input_details()
         self.get_output_details()
 
-        self.clustering = MeanShift(bandwidth=0.5, bin_seeding=True)
 
     def update(self, image):
         input_tensor = self.prepare_input(image)
 
         # Perform inference on the image
-        outputs = self.inference(input_tensor)
+        self.outputs = self.inference(input_tensor)
 
         # Process output data
-        self.segmentation, self.cluster_normals = self.process_output(outputs)
+        self.segmentation, self.cluster_normals = self.process_output(self.outputs)
 
         return self.segmentation, self.cluster_normals
 
@@ -62,10 +62,10 @@ class PlanarReconstruction:
 
         outputs = self.session.run(self.output_names, {self.input_names[0]: input_tensor})
 
-        print(f"Inference time: {(time.perf_counter() - start)*1000:.2f} ms")
+        # print(f"Inference time: {(time.perf_counter() - start)*1000:.2f} ms")
         return outputs
 
-    def process_output(self, outputs, use_prob=False):
+    def process_output(self, outputs):
 
         prob, embedding, param = outputs
 
@@ -73,48 +73,31 @@ class PlanarReconstruction:
         embedding = embedding.squeeze()
         param = param.squeeze() # Normal direction
 
-        emb = embedding.transpose(1, 2, 0)
-        emb = emb.reshape((-1, 2))
-        emb = np.float32(emb)
-
         # Get segmentation
-        segmentation = self.clustering.fit_predict(emb).reshape(prob.shape)
-
-        if use_prob:
-            # Calculate the avg probability of each segmentation cluster
-            prob_seg = np.zeros((segmentation.max() + 1,))
-            for i in range(segmentation.max() + 1):
-                prob_seg[i] = prob[segmentation == i].mean()
-
-            # Get the clusters with low probability
-            low_prob_clusters = np.where(prob_seg < 0.1)[0]
-
-            # Remove low probability clusters from segmentation
-            for i in low_prob_clusters:
-                segmentation[segmentation == i] = -1
+        segmentation = self.planeCluster(embedding)
 
         # Get the avg. param of each segmentation cluster
         param = param.transpose(1, 2, 0)
-        cluster_normals = np.zeros((segmentation.max() + 1, 3))
+        cluster_normals = np.zeros((segmentation.max()+1, 3))
         for i in range(segmentation.max() + 1):
+            if param[segmentation == i].shape[0] == 0:
+                continue
             cluster_normals[i] = param[segmentation == i].mean(axis=0)
-
         segmentation += 1
 
         return segmentation, cluster_normals
 
     def draw(self, image, alpha=0.5):
 
-        combined_img = cv2.cvtColor(image, cv2.COLOR_BGR2BGRA)
         # Draw segmentation
         color_segmap = colors[self.segmentation, :].astype(np.uint8)
         color_segmap = cv2.resize(color_segmap, (image.shape[1], image.shape[0]))
 
         # Fuse both images
         if alpha == 0:
-            combined_img = np.hstack((combined_img, color_segmap))
+            combined_img = np.hstack((image, color_segmap))
         else:
-            combined_img = cv2.addWeighted(combined_img, alpha, color_segmap, (1 - alpha), 0)
+            combined_img = cv2.addWeighted(image, alpha, color_segmap, (1 - alpha), 0)
 
         return combined_img
 

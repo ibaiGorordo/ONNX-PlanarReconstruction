@@ -6,7 +6,7 @@
 
 # Important
 - The post processing is not completelly the same as the original implementation. 
-- The Mean Shift was replaced with a custom method using Kmeans. It is faster (x10) than using MeanShift from scikit-learn, but it requires some fine tuning and is still slower than the model itself.
+- The Mean Shift was replaced with a custom method using Kmeans. It is faster (x10) than using MeanShift from scikit-learn ([previous commit](https://github.com/ibaiGorordo/ONNX-PlanarReconstruction/tree/459e0924c32c8cd6f77343f603a226550e0a8a15)), but it requires some fine tuning and is still slower than the model itself.
 
 # Requirements
 

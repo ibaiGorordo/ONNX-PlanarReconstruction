@@ -1,4 +1,4 @@
-# ONNX PlanarReconstruction (WIP)
+# ONNX PlanarReconstruction
  Python scripts performing plane segmentation using PlanarReconstruction model in ONNX.
 
 ![! ONNX PlanarReconstruction Plane Segmentation](https://github.com/ibaiGorordo/ONNX-PlanarReconstruction/blob/main/doc/img/planes.png)
